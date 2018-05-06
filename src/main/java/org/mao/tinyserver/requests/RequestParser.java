@@ -4,6 +4,7 @@ package org.mao.tinyserver.requests;
 import org.mao.tinyserver.config.ServerConfig;
 import org.mao.tinyserver.exception.ServerInternalException;
 import org.mao.tinyserver.exception.IllegalRequestException;
+import org.mao.tinyserver.io.ReadWriteSelectorHandler;
 import org.mao.tinyserver.io.Server;
 import org.mao.tinyserver.requests.enums.HttpMethod;
 import org.mao.tinyserver.requests.enums.HttpScheme;
@@ -15,6 +16,7 @@ import org.mao.tinyserver.utils.PathUtil;
 import java.io.*;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.logging.Level;
@@ -43,10 +45,21 @@ public class RequestParser {
 
     private final Request request = new Request();
 
-    public Request parseRequest(SocketChannel channel) throws IllegalRequestException {
+    public Request parseRequest(SocketChannel channel, SelectionKey key, Server server) throws IllegalRequestException {
         // TODO: 不把request都取出来, 只把head取出来, 然后把后面的直接放到ByteBuffer里去
-        byte[] requestBytes = BytesUtil.getBytesFromChannel(channel, Server.serverConfig.getMaxRequestKb());  //IllegalRequestException
+        request.server = server;
         request.client = channel;
+
+        ReadWriteSelectorHandler rwHandler = request.getRwHandler(key);
+
+        //byte[] requestBytes = BytesUtil.getBytesFromChannel(channel, Server.serverConfig.getMaxRequestKb());  //IllegalRequestException
+        byte[] requestBytes = new byte[0];
+        try {
+            requestBytes = rwHandler.handleRead().array();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return parseRequest(requestBytes);
     }
 

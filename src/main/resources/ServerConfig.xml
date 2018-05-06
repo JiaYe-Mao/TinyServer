@@ -20,5 +20,10 @@
 
     <filemanager>true</filemanager>
 
+    <!--<ssl>-->
+        <!--<sslkeystore>/Users/garymao/NustoreFiles/Nutstore/github/TinyServer/src/main/resources/icekeystore.jks</sslkeystore>-->
+        <!--<sslpassword>123456</sslpassword>-->
+    <!--</ssl>-->
+
 
 </serverconfig>

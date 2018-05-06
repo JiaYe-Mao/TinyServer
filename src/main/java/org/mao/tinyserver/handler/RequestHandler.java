@@ -23,12 +23,16 @@ public class RequestHandler implements Runnable {
     private static final Logger LOGGER = LoggerUtil.getLogger(RequestHandler.class);
     private final SocketChannel channel;
     private final Selector selector;
+    private final SelectionKey key;
+    private final Server server;
     private ResponseBuilder responseBuilder;
 
 
-    public RequestHandler(SocketChannel client, Selector selector) {
+    public RequestHandler(SocketChannel client, Selector selector, SelectionKey key, Server server) {
         this.channel = client;
         this.selector = selector;
+        this.key = key;
+        this.server = server;
     }
 
     @Override
@@ -37,7 +41,7 @@ public class RequestHandler implements Runnable {
         Request request = null;
         Response response;
         try {
-            request = new RequestParser().parseRequest(channel);       // 有可能是null
+            request = new RequestParser().parseRequest(channel, key, server);       // 有可能是null
             LOGGER.log(Level.INFO, "request is :\n" + request.toString());
 
             // todo: request可能还有问题, 待测试
@@ -56,7 +60,7 @@ public class RequestHandler implements Runnable {
         } catch (IllegalRequestException e2) {
             response = new ResponseBuilder(request).notOkResponse(Status.BAD_REQUEST_400);
         } catch (Exception e3) {
-            LOGGER.log(Level.SEVERE, "Unknown error : " + e3.getMessage());
+            LOGGER.log(Level.SEVERE, "RunTime error : " + e3.getMessage());
             e3.printStackTrace();
             response = new ResponseBuilder(request).notOkResponse(Status.INTERNAL_SERVER_ERROR_500);
         }

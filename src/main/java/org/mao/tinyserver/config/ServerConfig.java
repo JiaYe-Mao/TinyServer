@@ -13,10 +13,29 @@ public class ServerConfig {
     private String SERVER_INFO = "TinyServer/1.0";
     private boolean FileManager = false;
 
+    private String sslKeyStore;
+    private String sslPassWord;
+
     // ip
     // MaxRequestBytes       默认:2048     写config
     // characterEncoding
     // keepaliveTimeOut
+
+    public String getSslKeyStore() {
+        return sslKeyStore;
+    }
+
+    public void setSslKeyStore(String sslKeyStore) {
+        this.sslKeyStore = sslKeyStore;
+    }
+
+    public String getSslPassWord() {
+        return sslPassWord;
+    }
+
+    public void setSslPassWord(String sslPassWord) {
+        this.sslPassWord = sslPassWord;
+    }
 
     public int getPort() {
         return port;

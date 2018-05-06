@@ -96,7 +96,10 @@ public class Response {
 
         headers.put("Server", Server.serverConfig.getSERVER_INFO());
         if (!headers.containsKey("Connection")) {
-            boolean keepAlive = request.getHeader("Connection") != null && "keep-alive".equalsIgnoreCase(request.getHeader("Connection"));
+            boolean keepAlive = false;
+            if (request != null){
+                keepAlive = request.getHeader("Connection") != null && "keep-alive".equalsIgnoreCase(request.getHeader("Connection"));
+            }
             if (keepAlive) {
                 headers.put("Connection", "keep-alive");       // todo; 其实就算request里没有connection也是keep-alive
             } else {

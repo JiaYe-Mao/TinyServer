@@ -1,6 +1,10 @@
 package org.mao.tinyserver.requests;
 
 import org.mao.tinyserver.interfaces.HttpRequest;
+import org.mao.tinyserver.io.PlainReadWriteSelectorHandler;
+import org.mao.tinyserver.io.ReadWriteSelectorHandler;
+import org.mao.tinyserver.io.SSLReadWriteSelectorHandler;
+import org.mao.tinyserver.io.Server;
 import org.mao.tinyserver.requests.enums.HttpMethod;
 import org.mao.tinyserver.requests.enums.HttpScheme;
 import org.mao.tinyserver.utils.LoggerUtil;
@@ -9,6 +13,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.logging.Level;
@@ -34,7 +39,24 @@ public class Request implements HttpRequest {
     protected ByteBuffer requestBodyBuffer;              // 放在buffer里(堆外), 不怕OOM
     private InputStream inputStream;
     protected String characterEncoding;
+    protected Server server;
 
+    private ReadWriteSelectorHandler rwHandler;
+
+    public ReadWriteSelectorHandler getRwHandler(SelectionKey key) {
+        if (rwHandler == null){
+            this.rwHandler = server.getRWHandler(client, key);
+        }
+        return rwHandler;
+    }
+
+    public Server getServer() {
+        return server;
+    }
+
+    public void setServer(Server server) {
+        this.server = server;
+    }
 
     @Override
     public Map<String, List<String>> getParamMap() {

@@ -89,10 +89,25 @@ public class ServerConfigBuilder {
         String openFileManager = null;
         try {
             openFileManager = XMLUtil.findContentByURL("/serverconfig/filemanager", document);
-            if ("true".equals(openFileManager))
-            serverConfig.setFileManager(true);
+            if ("true".equals(openFileManager)){
+                serverConfig.setFileManager(true);
+            }
         } catch (XPathExpressionException | NullPointerException e) {
             logger.log(Level.INFO, "cannot find filemanager in config, set isFileManager to false");
+        }
+        String sslKeyStore = null;
+        try {
+            sslKeyStore = XMLUtil.findContentByURL("/serverconfig/ssl/sslkeystore", document);
+            serverConfig.setSslKeyStore(sslKeyStore);
+        } catch (XPathExpressionException | NullPointerException e) {
+            logger.log(Level.INFO, "cannot find sslKeyStore in config, not support HTTPS");
+        }
+        String sslPassWord = null;
+        try {
+            sslPassWord = XMLUtil.findContentByURL("/serverconfig/ssl/sslpassword", document);
+            serverConfig.setSslPassWord(sslPassWord);
+        } catch (XPathExpressionException | NullPointerException e) {
+            logger.log(Level.INFO, "cannot find filemanager in config, not support HTTPS");
         }
 
         return serverConfig;

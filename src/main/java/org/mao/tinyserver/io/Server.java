@@ -4,8 +4,14 @@ import org.mao.tinyserver.config.ServerConfig;
 import org.mao.tinyserver.config.ServerConfigBuilder;
 import org.mao.tinyserver.handler.RequestHandler;
 import org.mao.tinyserver.response.Response;
+import org.mao.tinyserver.ssl.SSLChannelFactory;
+import org.mao.tinyserver.utils.BytesUtil;
+import org.mao.tinyserver.utils.IOUtils;
 import org.mao.tinyserver.utils.LoggerUtil;
+import sun.nio.ch.IOUtil;
 
+import javax.net.ssl.SSLContext;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -28,9 +34,12 @@ public class Server {
     private final Selector selector;
     private static final Logger logger = LoggerUtil.getLogger(Server.class);
 
+    private SSLContext sslContext;
+
+
     public Server(String configURL) throws IOException {
         selector = Selector.open();
-        serverConfig = new ServerConfigBuilder().build();
+        serverConfig = new ServerConfigBuilder(configURL).build();
     }
 
     public void run() {
@@ -50,6 +59,7 @@ public class Server {
                     if (key.isAcceptable()) {
                         ServerSocketChannel server = (ServerSocketChannel) key.channel();
                         SocketChannel channel = server.accept();
+                        System.out.println("aaaaa" + channel.getRemoteAddress().toString());
                         channel.configureBlocking(false);
                         channel.register(selector, SelectionKey.OP_READ);
                     }else if (key.isWritable()) {
@@ -63,7 +73,7 @@ public class Server {
 
                     } else if (key.isReadable()) {
                         SocketChannel client = (SocketChannel) key.channel();
-                        ThreadPool.execute(new RequestHandler(client, selector));
+                        ThreadPool.execute(new RequestHandler(client, selector, key, this));
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
                     }
                 } catch (Exception ex) {
@@ -102,6 +112,31 @@ public class Server {
             }
             return false;
         }
+        // Deal with HTTPS
+        if (serverConfig.getSslKeyStore() != null && serverConfig.getSslPassWord() != null){
+            File file = null;
+            if (serverConfig.getSslKeyStore().startsWith("classpath:")) {
+                byte[] fileBytes = IOUtils.getByteByInputStream(Server.class.getResourceAsStream(serverConfig.getSslKeyStore().substring("classpath:".length())));
+                try {
+                    file = File.createTempFile("keystore", serverConfig.getSslKeyStore().substring(serverConfig.getSslKeyStore().lastIndexOf(".")));
+                    BytesUtil.writeBytesToFile(fileBytes, file);
+                } catch (IOException e) {
+                    logger.log(Level.SEVERE, "", e);
+                }
+
+            } else {
+                file = new File(serverConfig.getSslKeyStore());
+            }
+            if (file == null || !file.exists()) {
+                throw new RuntimeException("keystore can't null or not exists");
+            } else {
+                try {
+                    sslContext = SSLChannelFactory.getSSLContext(file, serverConfig.getSslPassWord());
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, "", e);
+                }
+            }
+        }
         long spentTime = System.currentTimeMillis() - start;
         logger.log(Level.INFO, "Server Initialization success! Server address is http://localhost:"
                     + serverConfig.getPort()
@@ -119,6 +154,20 @@ public class Server {
         } catch (IOException e) {
             logger.log(Level.SEVERE, "close selector error", e);
         }
+    }
+
+    public ReadWriteSelectorHandler getRWHandler(SocketChannel client, SelectionKey key){
+        ReadWriteSelectorHandler rwHandler = null;
+        if (serverConfig.getSslKeyStore() != null && serverConfig.getSslPassWord() != null){
+            try {
+                rwHandler = new SSLReadWriteSelectorHandler(client, key, sslContext, selector);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            rwHandler = new PlainReadWriteSelectorHandler(client);
+        }
+        return rwHandler;
     }
 
 

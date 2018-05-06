@@ -18,5 +18,10 @@
 
     <filemanager>true</filemanager>
 
+    <ssl>
+        <sslkeystore>/keystore.jks</sslkeystore>
+        <sslpassword>password</sslpassword>
+    </ssl>
+
 
 </serverconfig>
