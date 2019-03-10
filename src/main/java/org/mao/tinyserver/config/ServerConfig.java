@@ -3,7 +3,8 @@ package org.mao.tinyserver.config;
 public class ServerConfig {
 
     private Integer port = 8888;
-    private Integer maxThread = 50;
+    private Integer maxThread = 200;
+    private Integer corePoolSize = 50;
     private String staticURLPath;
     private String staticLocationPath;
     private String welcomeFile;
@@ -13,6 +14,9 @@ public class ServerConfig {
     private String SERVER_INFO = "TinyServer/1.0";
     private boolean FileManager = false;
 
+    // todo:implememts
+    private boolean cache = true;
+
     private String sslKeyStore;
     private String sslPassWord;
 
@@ -20,6 +24,15 @@ public class ServerConfig {
     // MaxRequestBytes       默认:2048     写config
     // characterEncoding
     // keepaliveTimeOut
+
+
+    public boolean isCache() {
+        return cache;
+    }
+
+    public void setCache(boolean cache) {
+        this.cache = cache;
+    }
 
     public String getSslKeyStore() {
         return sslKeyStore;
@@ -116,6 +129,14 @@ public class ServerConfig {
 
     public void setFileManager(boolean fileManager) {
         FileManager = fileManager;
+    }
+
+    public Integer getCorePoolSize() {
+        return corePoolSize;
+    }
+
+    public void setCorePoolSize(Integer corePoolSize) {
+        this.corePoolSize = corePoolSize;
     }
 
     @Override

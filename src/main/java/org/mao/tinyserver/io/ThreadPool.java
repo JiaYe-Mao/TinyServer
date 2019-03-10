@@ -4,16 +4,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Hanson on 2016/11/28 13:18.
- */
+
 public class ThreadPool {
 
     private static ThreadPoolExecutor threadPoolExecutor;
 
     static {
-        threadPoolExecutor = new ThreadPoolExecutor(Server.serverConfig.getMaxThread(),
-                200,
+        threadPoolExecutor = new ThreadPoolExecutor(Server.serverConfig.getCorePoolSize(),
+                Server.serverConfig.getMaxThread(),
                 60,
                 TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(1000),

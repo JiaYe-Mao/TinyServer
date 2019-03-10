@@ -1,7 +1,6 @@
 package org.mao.tinyserver.requests;
 
 
-import org.mao.tinyserver.config.ServerConfig;
 import org.mao.tinyserver.exception.ServerInternalException;
 import org.mao.tinyserver.exception.IllegalRequestException;
 import org.mao.tinyserver.io.ReadWriteSelectorHandler;
@@ -23,8 +22,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.sun.xml.internal.ws.spi.db.BindingContextFactory.LOGGER;
 
 
 public class RequestParser {
@@ -49,6 +46,7 @@ public class RequestParser {
         // TODO: 不把request都取出来, 只把head取出来, 然后把后面的直接放到ByteBuffer里去
         request.server = server;
         request.client = channel;
+        request.key = key;
 
         ReadWriteSelectorHandler rwHandler = request.getRwHandler(key);
 
@@ -158,9 +156,9 @@ public class RequestParser {
             Object contentLengthObj = request.getHeader("Content-Length");
             if (contentLengthObj != null) {
                 Integer dataLength = Integer.parseInt(contentLengthObj.toString());
-//                if (dataLength > 20971520) {      //todo: getRequest().getRequestConfig().getMaxRequestBodySize()
-//                    throw new IllegalRequestException("The Content-Length outside the max upload size " + 20971520);
-//                }
+                if (dataLength > Server.serverConfig.getMaxRequestKb()*1024) {      //todo: getRequest().getRequestConfig().getMaxRequestBodySize()
+                    throw new IllegalRequestException("The Content-Length outside the max upload size " + Server.serverConfig.getMaxRequestKb()*1024);
+                }
                 request.requestBodyBuffer = ByteBuffer.allocate(dataLength);
                 request.requestBodyBuffer.put(requestBodyData);
                 flag = !request.requestBodyBuffer.hasRemaining();                // 判断Content-Length是否符合body长度, 其实可以不要的
@@ -211,7 +209,7 @@ public class RequestParser {
 
             } else {
                 // raw or binary
-                // do nothing. User can get body inputStream from request.
+                // do nothing. Users can get body inputStream from request.
             }
         }
     }
@@ -251,8 +249,10 @@ public class RequestParser {
                         values = new ArrayList<String>();
                         request.paramMap.put(partName, values);
                     }
-                    partStr.delete(partStr.lastIndexOf("\n"), partStr.lastIndexOf("\n")+1);       // delete last "\n"
+
+                    //todo:目前不支持空文件上传,因为空文件partStr是null
                     if (partStr != null){
+                        partStr.delete(partStr.lastIndexOf("\n"), partStr.lastIndexOf("\n")+1);       // delete last "\n"
                         if (partContentType == null){
                             values.add(partStr.toString());
                         } else {

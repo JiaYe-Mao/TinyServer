@@ -1,9 +1,7 @@
 package org.mao.tinyserver.requests.enums;
 
 
-/**
- * Hanson on 2016/11/29 11:12.
- */
+
 public enum HttpScheme {
 
     HTTP("http"),

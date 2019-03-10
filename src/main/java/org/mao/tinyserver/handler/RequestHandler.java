@@ -5,16 +5,22 @@ import org.mao.tinyserver.exception.ServerInternalException;
 import org.mao.tinyserver.io.Server;
 import org.mao.tinyserver.requests.Request;
 import org.mao.tinyserver.requests.RequestParser;
+import org.mao.tinyserver.requests.enums.HttpMethod;
 import org.mao.tinyserver.response.Response;
 import org.mao.tinyserver.response.ResponseBuilder;
 import org.mao.tinyserver.response.enums.Status;
+import org.mao.tinyserver.utils.BytesUtil;
+import org.mao.tinyserver.utils.IOUtils;
 import org.mao.tinyserver.utils.LoggerUtil;
 
+import javax.xml.ws.http.HTTPBinding;
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,26 +45,40 @@ public class RequestHandler implements Runnable {
     public void run() {
         long start = System.currentTimeMillis();
         Request request = null;
-        Response response;
+        Response response = null;
         try {
+            if (Server.cache == null){
+                Server.cache = new HashMap<>();
+            }
             request = new RequestParser().parseRequest(channel, key, server);       // 有可能是null
             LOGGER.log(Level.INFO, "request is :\n" + request.toString());
 
-            // todo: request可能还有问题, 待测试
-            responseBuilder = new ResponseBuilder(request);
-            response = tryStaticFile(request);
+            if (Server.serverConfig.isCache() && Server.cache.get(request.getUri()+request.getMethod()) != null){
+                    response = Server.cache.get(request.getUri()+request.getMethod());
+                    LOGGER.log(Level.INFO, "cache triggered");
+            } else{
 
-            //service
+                // todo: request可能还有问题, 待测试
+                responseBuilder = new ResponseBuilder(request);
+                //include upload Multipart
+                response = tryStaticFile(request);
+
+
+
+                //service
 //            if (response == null){
 //
 //            }
+            }
+
+
 
 
         } catch (ServerInternalException e1) { // 这个IOException都是parseRequest里出来的
             LOGGER.log(Level.SEVERE, e1.getMessage());
             response = new ResponseBuilder(request).notOkResponse(Status.INTERNAL_SERVER_ERROR_500);
         } catch (IllegalRequestException e2) {
-            response = new ResponseBuilder(request).notOkResponse(Status.BAD_REQUEST_400);
+            //response = new ResponseBuilder(request).notOkResponse(Status.BAD_REQUEST_400);
         } catch (Exception e3) {
             LOGGER.log(Level.SEVERE, "RunTime error : " + e3.getMessage());
             e3.printStackTrace();
@@ -69,6 +89,12 @@ public class RequestHandler implements Runnable {
         if (response == null){
             response = new ResponseBuilder(request).notOkResponse(Status.NOT_FOUND_404);
         }
+
+        if(Server.serverConfig.isCache() && request.getUri()!= null && request.getMethod() != null
+                && Server.cache.get(request.getUri() + request.getMethod()) == null){
+            Server.cache.put(request.getUri()+request.getMethod(),response);
+        }
+
 
         attachResponse(response);
 
@@ -104,6 +130,10 @@ public class RequestHandler implements Runnable {
 //            if (Server.serverConfig.getStaticURLPath().equals(request.getUri().endsWith("/") ? request.getUri() : (request.getUri() + "/"))) {
 //                path += Server.serverConfig.getWelcomeFile();
 //            }
+
+            //
+            tryFileManagerUploadFile(request,path);
+
             File file = new File(Server.serverConfig.getStaticLocationPath() + path);
             return responseBuilder.fileResponse(file, path);
 
@@ -111,9 +141,28 @@ public class RequestHandler implements Runnable {
         return null;
     }
 
+    private void tryFileManagerUploadFile(Request request,String path){
+        if (request.getMethod().equals(HttpMethod.POST) && !request.getFiles().isEmpty()){
+            for (File file : request.getFiles().values()){
+                try(FileInputStream fileInputStream = new FileInputStream(file)){
+                    ByteBuffer bb = IOUtils.convertInputStreamIntoByteBuffer(fileInputStream);
+                    File targetFile = new File(Server.serverConfig.getStaticLocationPath() + path + "/" + file.getName());
+                    if (!targetFile.exists()){
+                        BytesUtil.writeBytesToFile(bb.array(),targetFile);
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     private void attachResponse(Response response) {
         try {
             channel.register(selector, SelectionKey.OP_WRITE, response);
+            //LOGGER.log(Level.SEVERE, "Message : ==" + response.toString());
             selector.wakeup();
         } catch (ClosedChannelException e) {
             LOGGER.log(Level.SEVERE, "通道已关闭", e);

@@ -34,6 +34,9 @@ public class RequestParserTest {
                         + FIELD2 + "\"\r\n" + "\r\n" + VALUE2 + "\r\n" + "--" + divider + "--\r\n";
         int size = content.length();
         String input = header + CONTENT_LENGTH + size + "\r\n\r\n" + content;
+
+        System.out.println(input);
+
         Request request = new RequestParser().parseRequest(input.getBytes());
 
         System.out.println(request);

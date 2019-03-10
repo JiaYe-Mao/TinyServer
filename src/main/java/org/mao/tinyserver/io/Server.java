@@ -3,6 +3,7 @@ package org.mao.tinyserver.io;
 import org.mao.tinyserver.config.ServerConfig;
 import org.mao.tinyserver.config.ServerConfigBuilder;
 import org.mao.tinyserver.handler.RequestHandler;
+import org.mao.tinyserver.requests.Request;
 import org.mao.tinyserver.response.Response;
 import org.mao.tinyserver.ssl.SSLChannelFactory;
 import org.mao.tinyserver.utils.BytesUtil;
@@ -25,7 +26,9 @@ import java.nio.charset.Charset;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,6 +38,8 @@ public class Server {
     private static final Logger logger = LoggerUtil.getLogger(Server.class);
 
     private SSLContext sslContext;
+
+    public static Map<String, Response> cache;
 
 
     public Server(String configURL) throws IOException {
@@ -59,7 +64,7 @@ public class Server {
                     if (key.isAcceptable()) {
                         ServerSocketChannel server = (ServerSocketChannel) key.channel();
                         SocketChannel channel = server.accept();
-                        System.out.println("aaaaa" + channel.getRemoteAddress().toString());
+                        //System.out.println("aaaaa" + channel.getRemoteAddress().toString());
                         channel.configureBlocking(false);
                         channel.register(selector, SelectionKey.OP_READ);
                     }else if (key.isWritable()) {

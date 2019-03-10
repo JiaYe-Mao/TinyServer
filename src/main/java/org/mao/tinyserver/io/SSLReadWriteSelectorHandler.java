@@ -317,46 +317,7 @@ public class SSLReadWriteSelectorHandler extends PlainReadWriteSelectorHandler {
         return sslEngine.getHandshakeStatus();
     }
 
-    /*
-     * Read the channel for more information, then unwrap the
-     * (hopefully application) data we get.
-     * <P>
-     * If we run out of data, we'll return to our caller (possibly using
-     * a Selector) to get notification that more is available.
-     * <P>
-     * Each call to this method will perform at most one underlying read().
-     */
-    ByteBuffer read() throws IOException {
-        //SSLEngineResult result;
 
-        if (!handshakeDone) {
-            throw new IllegalStateException();
-        }
-
-        if (sslEngine.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING)
-        {
-            sc.read(inNetBB);
-            inNetBB.flip();
-
-            SSLEngineResult engineResult = sslEngine.unwrap(inNetBB, appIn);
-            //log("server unwrap: ", engineResult);
-            doTask();
-            //runDelegatedTasks(engineResult, sslEngine);
-            inNetBB.compact();
-            if (engineResult.getStatus() == SSLEngineResult.Status.OK)
-            {
-                System.out.println("text recieved");
-                appIn.flip();// ready for reading
-                System.out.println(decoder.decode(appIn));
-                appIn.compact();
-            }
-            else if(engineResult.getStatus() == SSLEngineResult.Status.CLOSED) {
-                doSSLClose(key);
-            }
-
-        }
-        return appIn;
-    }
 
     /*
      * Try to flush out any existing outbound data, then try to wrap
@@ -409,65 +370,7 @@ public class SSLReadWriteSelectorHandler extends PlainReadWriteSelectorHandler {
         return retValue;
     }
 
-    /*
-     * Flush any remaining data.
-     * <P>
-     * Return true when the fileChannelBB and outNetBB are empty.
-     */
-    boolean dataFlush() throws IOException {
-        boolean fileFlushed = true;
 
-        if ((fileChannelBB != null) && fileChannelBB.hasRemaining()) {
-            doWrite(fileChannelBB);
-            fileFlushed = !fileChannelBB.hasRemaining();
-        } else if (outNetBB.hasRemaining()) {
-            tryFlush(outNetBB);
-        }
-
-        return (fileFlushed && !outNetBB.hasRemaining());
-    }
-
-    /*
-     * Begin the shutdown process.
-     * <P>
-     * Close out the SSLEngine if not already done so, then
-     * wrap our outgoing close_notify message and try to send it on.
-     * <P>
-     * Return true when we're done passing the shutdown messsages.
-     */
-    boolean shutdown() throws IOException {
-
-        if (!shutdown) {
-            sslEngine.closeOutbound();
-            shutdown = true;
-        }
-
-        if (outNetBB.hasRemaining() && tryFlush(outNetBB)) {
-            return false;
-        }
-
-	/*
-     * By RFC 2616, we can "fire and forget" our close_notify
-	 * message, so that's what we'll do here.
-	 */
-        outNetBB.clear();
-        SSLEngineResult result = sslEngine.wrap(hsBB, outNetBB);
-        if (result.getStatus() != Status.CLOSED) {
-            throw new SSLException("Improper close state");
-        }
-        outNetBB.flip();
-
-	/*
-     * We won't wait for a select here, but if this doesn't work,
-	 * we'll cycle back through on the next select.
-	 */
-        if (outNetBB.hasRemaining()) {
-            tryFlush(outNetBB);
-        }
-
-        return (!outNetBB.hasRemaining() &&
-                (result.getHandshakeStatus() != HandshakeStatus.NEED_WRAP));
-    }
 
     @Override
     public void handleWrite(ByteBuffer byteBuffer) throws IOException {
@@ -490,6 +393,47 @@ public class SSLReadWriteSelectorHandler extends PlainReadWriteSelectorHandler {
         return read();
     }
 
+    /*
+     * Read the channel for more information, then unwrap the
+     * (hopefully application) data we get.
+     * <P>
+     * If we run out of data, we'll return to our caller (possibly using
+     * a Selector) to get notification that more is available.
+     * <P>
+     * Each call to this method will perform at most one underlying read().
+     */
+    ByteBuffer read() throws IOException {
+        //SSLEngineResult result;
+
+        if (!handshakeDone) {
+            throw new IllegalStateException();
+        }
+
+        if (sslEngine.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING)
+        {
+            sc.read(inNetBB);
+            inNetBB.flip();
+
+            SSLEngineResult engineResult = sslEngine.unwrap(inNetBB, appIn);
+            //log("server unwrap: ", engineResult);
+            doTask();
+            //runDelegatedTasks(engineResult, sslEngine);
+            inNetBB.compact();
+            if (engineResult.getStatus() == SSLEngineResult.Status.OK)
+            {
+                System.out.println("text recieved");
+                appIn.flip();// ready for reading
+                System.out.println(decoder.decode(appIn));
+                appIn.compact();
+            }
+            else if(engineResult.getStatus() == SSLEngineResult.Status.CLOSED) {
+                doSSLClose(key);
+            }
+
+        }
+        return appIn;
+    }
+
     @Override
     public void close() {
         try {
@@ -502,6 +446,66 @@ public class SSLReadWriteSelectorHandler extends PlainReadWriteSelectorHandler {
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "", e);
         }
+    }
+
+    /*
+     * Begin the shutdown process.
+     * <P>
+     * Close out the SSLEngine if not already done so, then
+     * wrap our outgoing close_notify message and try to send it on.
+     * <P>
+     * Return true when we're done passing the shutdown messsages.
+     */
+    boolean shutdown() throws IOException {
+
+        if (!shutdown) {
+            sslEngine.closeOutbound();
+            shutdown = true;
+        }
+
+        if (outNetBB.hasRemaining() && tryFlush(outNetBB)) {
+            return false;
+        }
+
+        /*
+         * By RFC 2616, we can "fire and forget" our close_notify
+         * message, so that's what we'll do here.
+         */
+        outNetBB.clear();
+        SSLEngineResult result = sslEngine.wrap(hsBB, outNetBB);
+        if (result.getStatus() != Status.CLOSED) {
+            throw new SSLException("Improper close state");
+        }
+        outNetBB.flip();
+
+        /*
+         * We won't wait for a select here, but if this doesn't work,
+         * we'll cycle back through on the next select.
+         */
+        if (outNetBB.hasRemaining()) {
+            tryFlush(outNetBB);
+        }
+
+        return (!outNetBB.hasRemaining() &&
+                (result.getHandshakeStatus() != HandshakeStatus.NEED_WRAP));
+    }
+
+    /*
+     * Flush any remaining data.
+     * <P>
+     * Return true when the fileChannelBB and outNetBB are empty.
+     */
+    boolean dataFlush() throws IOException {
+        boolean fileFlushed = true;
+
+        if ((fileChannelBB != null) && fileChannelBB.hasRemaining()) {
+            doWrite(fileChannelBB);
+            fileFlushed = !fileChannelBB.hasRemaining();
+        } else if (outNetBB.hasRemaining()) {
+            tryFlush(outNetBB);
+        }
+
+        return (fileFlushed && !outNetBB.hasRemaining());
     }
 
     //close an ssl talk, similar to the handshake steps

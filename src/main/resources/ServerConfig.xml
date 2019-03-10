@@ -1,29 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-
 <serverconfig>
-
     <port>8083</port>
-
     <host>localhost</host>
-
-    <maxthread>50</maxthread>
-
+    <corepoolsize>300</corepoolsize>
+    <maxthread>500</maxthread>
+    <maxrequestkb>4096</maxrequestkb>
     <!--目前只支持一个staticRoot-->
     <staticroot>
         <urlpath>/static</urlpath>
         <locationpath>/Users/garymao/NustoreFiles/Nutstore/github/TinyServer/src/main/resources/html</locationpath>
     </staticroot>
-
     <welcomefile>index.html</welcomefile>
-
     <serviceroot>/Users/garymao/NustoreFiles/Nutstore/github/TinyServer/src/test/java/org/mao/tinyserver/service</serviceroot>
-
     <filemanager>true</filemanager>
-
     <!--<ssl>-->
         <!--<sslkeystore>/Users/garymao/NustoreFiles/Nutstore/github/TinyServer/src/main/resources/icekeystore.jks</sslkeystore>-->
         <!--<sslpassword>123456</sslpassword>-->
     <!--</ssl>-->
-
-
 </serverconfig>

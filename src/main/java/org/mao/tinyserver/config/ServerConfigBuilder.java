@@ -31,6 +31,7 @@ public class ServerConfigBuilder {
 
         ServerConfig serverConfig = new ServerConfig();
 
+        //todo:实现地比较蠢,准备搞个自动化匹配
         Integer port = null;
         try {
             port = Integer.parseInt(XMLUtil.findContentByURL("/serverconfig/port", document));
@@ -41,8 +42,8 @@ public class ServerConfigBuilder {
         Integer maxThread = null;
         try {
             maxThread = Integer.parseInt(XMLUtil.findContentByURL("/serverconfig/maxthread", document));
-            if (maxThread < 1 || maxThread > 200){
-                throw new InvalidConfigException("maxThread need to be less than 200, larger than 0");
+            if (maxThread < 1 || maxThread > 1000){
+                throw new InvalidConfigException("maxThread need to be less than 1000, larger than 0");
             }
             serverConfig.setMaxThread(maxThread);
         } catch (XPathExpressionException | NullPointerException e) {
@@ -100,14 +101,28 @@ public class ServerConfigBuilder {
             sslKeyStore = XMLUtil.findContentByURL("/serverconfig/ssl/sslkeystore", document);
             serverConfig.setSslKeyStore(sslKeyStore);
         } catch (XPathExpressionException | NullPointerException e) {
-            logger.log(Level.INFO, "cannot find sslKeyStore in config, not support HTTPS");
+            logger.log(Level.INFO, "cannot find sslKeyStore in config, not supporting HTTPS");
         }
         String sslPassWord = null;
         try {
             sslPassWord = XMLUtil.findContentByURL("/serverconfig/ssl/sslpassword", document);
             serverConfig.setSslPassWord(sslPassWord);
         } catch (XPathExpressionException | NullPointerException e) {
-            logger.log(Level.INFO, "cannot find filemanager in config, not support HTTPS");
+            logger.log(Level.INFO, "cannot find filemanager in config, not supporting HTTPS");
+        }
+        Integer maxRequestKb = null;
+        try {
+            maxRequestKb = Integer.parseInt(XMLUtil.findContentByURL("/serverconfig/maxrequestkb", document));
+            serverConfig.setMaxRequestKb(maxRequestKb);
+        } catch (XPathExpressionException | NullPointerException e) {
+            logger.log(Level.INFO, "cannot find maxRequestKb in serverConfig, set maxRequestKb to 2048");
+        }
+        Integer corePoolSize = null;
+        try {
+            corePoolSize = Integer.parseInt(XMLUtil.findContentByURL("/serverconfig/corepoolsize", document));
+            serverConfig.setCorePoolSize(corePoolSize);
+        } catch (XPathExpressionException | NullPointerException e) {
+            logger.log(Level.INFO, "cannot find corePoolSize in serverConfig, set corePoolSize to 50");
         }
 
         return serverConfig;

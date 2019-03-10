@@ -1,9 +1,6 @@
 package org.mao.tinyserver.requests;
 
-/**
- * Be careful!
- * Created by hason on 15/9/29.
- */
+
 public class MimeData {
 
     private String type;

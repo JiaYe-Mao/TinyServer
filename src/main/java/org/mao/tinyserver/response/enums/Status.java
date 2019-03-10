@@ -1,8 +1,6 @@
 package org.mao.tinyserver.response.enums;
 
-/**
- * Http状态码
- */
+
 public enum Status {
     SUCCESS_200(200, "OK"),
     NOT_MODIFIED_304(304, "NOT MODIFIED"),

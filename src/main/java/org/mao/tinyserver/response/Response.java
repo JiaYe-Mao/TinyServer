@@ -61,15 +61,14 @@ public class Response {
                 responseBB = ByteBuffer.allocate(head.length);
                 responseBB.put(head);
             }
-            responseBB.flip();
-            // Write()方法无法保证能写多少字节到SocketChannel。所以，我们重复调用write()直到Buffer没有要写的字节为止。
-            while (responseBB.hasRemaining() && sc.isOpen()) {
 
-                int len = sc.write(responseBB);
-                if (len < 0) {
-                    throw new EOFException();
-                }
+            //write data
+            if (request==null || request.getMethod()==null){
+
+            } else {
+                request.getRwHandler(request.getKey()).handleWrite(responseBB);
             }
+
             if ("close".equalsIgnoreCase(headers.get("Connection"))) {     // todo: close 条件
                 try {
                     sc.close();
@@ -130,5 +129,9 @@ public class Response {
     }
 
 
-
+    @Override
+    public String toString() {
+        return "Response{" +
+                "status=" + status + "\n" + request.toString();
+    }
 }

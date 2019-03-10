@@ -41,6 +41,8 @@ public class Request implements HttpRequest {
     protected String characterEncoding;
     protected Server server;
 
+    protected SelectionKey key;
+
     private ReadWriteSelectorHandler rwHandler;
 
     public ReadWriteSelectorHandler getRwHandler(SelectionKey key) {
@@ -50,12 +52,24 @@ public class Request implements HttpRequest {
         return rwHandler;
     }
 
+    public SelectionKey getKey(){
+        return key;
+    }
+
     public Server getServer() {
         return server;
     }
 
     public void setServer(Server server) {
         this.server = server;
+    }
+
+    public Map<String, File> getFiles() {
+        return files;
+    }
+
+    public void setFiles(Map<String, File> files) {
+        this.files = files;
     }
 
     @Override
@@ -115,7 +129,7 @@ public class Request implements HttpRequest {
 //                cookies = Cookie.saxToCookie(cookieHeader);
 //                String jsessionid = Cookie.getJSessionId(cookieHeader);
 //                if (jsessionid != null) {
-//                    session = SessionUtil.getSessionById(jsessionid);
+//                    `session = SessionUtil.getSessionById(jsessionid);
 //                }
 //            }
 //            if (create && session == null) {
