@@ -2,6 +2,7 @@ package org.mao.tinyserver.config;
 
 public class ServerConfig {
 
+    // default parameters
     private Integer port = 8888;
     private Integer maxThread = 200;
     private Integer corePoolSize = 50;

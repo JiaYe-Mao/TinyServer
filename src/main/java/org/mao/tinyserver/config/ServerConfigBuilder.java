@@ -1,5 +1,6 @@
 package org.mao.tinyserver.config;
 
+import org.mao.tinyserver.exception.InvalidConfigException;
 import org.mao.tinyserver.utils.LoggerUtil;
 import org.mao.tinyserver.utils.XMLUtil;
 import org.w3c.dom.Document;
@@ -140,7 +141,4 @@ public class ServerConfigBuilder {
         }
         return document;
     }
-
-
-
 }

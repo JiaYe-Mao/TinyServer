@@ -1,4 +1,4 @@
-package org.mao.tinyserver.config;
+package org.mao.tinyserver.exception;
 
 public class InvalidConfigException extends RuntimeException {
     public InvalidConfigException(String message) {

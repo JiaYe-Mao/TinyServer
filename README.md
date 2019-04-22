@@ -9,4 +9,4 @@ TinyServer使用方法：
 TinyServer manual:
 1. Modify src/main/resource/ServerConfig.xml, Replace the content of staticRoot/locationpath to the root directory of FileManager.
 2. Run the main method of ServerRunner.java, wait for the Server running.
-3. Input localhost:8083/static/ in address bar. The FileManager index will be shown. User is able to upload, downloads files.
+3. Users can input localhost:8083/static/ in address bar. The FileManager index will be shown. Users are able to upload, downloads files.
